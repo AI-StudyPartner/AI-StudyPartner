@@ -1,12 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+// 路径选择（默认考研）
+const path = ref<'kaoyan' | 'job' | 'civil' | 'oversea'>('kaoyan')
 
 // 简历（前端原型）
 const resumeFiles = ref<any[]>([])
 const beforeUpload = (file: File) => { resumeFiles.value = [file]; return false }
 
-// 理想岗位（直接就业）
-const idealPosition = ref<string>('前端工程师')
+// Mock：考研资源与时间线
+const kaoyanResources = ref([
+  { title: '数学一冲刺串讲', link: 'https://www.bilibili.com' },
+  { title: '英语二历年真题精讲', link: 'https://www.bilibili.com' },
+  { title: '政治核心考点速记', link: 'https://www.bilibili.com' },
+])
+
+const seasonAdvice = computed(() => (
+  path.value === 'kaoyan'
+    ? '建议在备考同时保留春秋招机会：准备一版求职简历与项目合集，关注校招/实习公告。'
+    : '建议完善考研信息，明确院校与专业，制定科目学习节奏。'
+))
 
 const jobVideos = ref([
   { title: '校招简历速通指南', url: 'https://www.bilibili.com', cover: 'https://via.placeholder.com/160x90' },
@@ -17,20 +30,36 @@ const jobVideos = ref([
 <template>
   <div class="work-container">
     <div class="page-header">
-      <h1 class="page-title">To 就业</h1>
-      <p class="page-subtitle">一切为了更好的就业</p>
+      <h1 class="page-title">职业规划 · 就业</h1>
+      <p class="page-subtitle">默认选择考研路径，同时保留春秋招准备与简历完善</p>
     </div>
 
     <div class="grid">
-      <!-- 左列：理想岗位 + 就业准备 -->
+      <!-- 左列：路径选择 + 考研资源/时间线 -->
       <div class="left">
         <div class="card">
-          <h2 class="section-title">理想岗位</h2>
-          <a-input v-model:value="idealPosition" placeholder="例如：前端工程师 / 算法工程师" />
-          <p class="hint">填写你想从事的岗位名称，后续内容将围绕该方向展示。</p>
+          <h2 class="section-title">就业方向选择</h2>
+          <a-segmented v-model:value="path" :options="[
+            { label: '考研', value: 'kaoyan' },
+            { label: '直接就业', value: 'job' },
+            { label: '考公', value: 'civil' },
+            { label: '出国', value: 'oversea' },
+          ]" />
+          <p class="hint">{{ seasonAdvice }}</p>
         </div>
 
-        <div class="card">
+        <div v-if="path==='kaoyan'" class="card">
+          <h2 class="section-title">考研复习资源（Mock）</h2>
+          <a-list :data-source="kaoyanResources" :renderItem="() => null">
+            <template #renderItem="{ item }">
+              <a-list-item>
+                <a :href="item.link" target="_blank">{{ item.title }}</a>
+              </a-list-item>
+            </template>
+          </a-list>
+        </div>
+
+        <div v-else class="card">
           <h2 class="section-title">就业准备（Mock）</h2>
           <ul class="bullets">
             <li>梳理课程项目与竞赛，形成简历要点</li>

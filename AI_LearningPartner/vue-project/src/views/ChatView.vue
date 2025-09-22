@@ -201,7 +201,7 @@ const deleteConversation = (id: number) => {
     <div class="chat-main">
       <!-- 聊天头部 -->
       <div class="chat-header">
-        <div class="chat-title">AI学习搭子</div>
+        <div class="chat-title">AI学习伙伴</div>
         <a-button type="text" class="more-btn">
           <MoreOutlined />
         </a-button>
@@ -211,7 +211,7 @@ const deleteConversation = (id: number) => {
       <div class="messages-container">
         <div class="messages-list">
           <div v-if="messages.length === 0 && !isTyping" class="empty-messages">
-            <div class="empty-message-text">开始与AI学习搭子对话吧！</div>
+            <div class="empty-message-text">开始与AI学习伙伴对话吧！</div>
           </div>
           <div v-for="message in messages" :key="message.id" :class="['message', message.role]">
             <div class="message-avatar">
@@ -261,7 +261,7 @@ const deleteConversation = (id: number) => {
             <a-button class="attach-btn" title="添加附件">+</a-button>
           </a-upload>
 
-          <a-textarea v-model:value="inputValue" placeholder="随意输点什么吧...（可附带图片/文件）" :auto-size="{ minRows: 1, maxRows: 4 }"
+          <a-textarea v-model:value="inputValue" placeholder="输入你的问题...（可附带图片/文件）" :auto-size="{ minRows: 1, maxRows: 4 }"
             @keydown.enter.prevent="sendMessage" class="message-input" />
 
           <a-button type="primary" @click="sendMessage" :disabled="!inputValue.trim() && selectedFiles.length === 0" class="send-btn">
