@@ -18,31 +18,10 @@ const showCitations = ref<boolean>(true)
 // 保存（当前仅本地模拟）
 const isSaving = ref(false)
 const saveSettings = async () => {
-  try{
-      axios.get("http://localhost:8080/set/save", {
-        params: {
-          personalProfile : personalProfile,
-          dailyFocusMinute : dailyFocusMinutes,
-          weeklyAvailableDays : weeklyAvailableDays,
-          tone : tone,
-          responseLength : responseLength,
-          allowEmojis : allowEmojis,
-          showCitations : showCitations
-        }
-      })
-  } catch(e) {
-      console.error("保存失败",e)
-  }
-  
-
   isSaving.value = true
   await new Promise(r => setTimeout(r, 600))
   isSaving.value = false
 }
-
-
-
-
 </script>
 
 <template>

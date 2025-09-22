@@ -16,7 +16,7 @@ import {
 } from '@ant-design/icons-vue'
 
 const selectedKeys = ref<string[]>(['chat'])
-const openKeys = ref<string[]>([])
+const openKeys = ref<string[]>(['learn-career'])
 const router = useRouter()
 const route = useRoute()
 
@@ -29,6 +29,18 @@ const breadcrumbItems = computed(() => {
   } else if (path.includes('/focus')) {
     selectedKeys.value = ['focus']
     return [{ title: '专注空间' }]
+  } else if (path.includes('/study')) {
+    selectedKeys.value = ['to-study']
+    return [{ title: '学业与就业' }, { title: 'To 学业' }]
+  } else if (path.includes('/work')) {
+    selectedKeys.value = ['to-work']
+    return [{ title: '学业与就业' }, { title: 'To 就业' }]
+  } else if (path.includes('/review')) {
+    selectedKeys.value = ['daily-review']
+    return [{ title: '每日复盘' }]
+  } else if (path.includes('/settings')) {
+    selectedKeys.value = ['user-settings']
+    return [{ title: '用户与设置' }]
   }
   selectedKeys.value = ['chat']
   return [{ title: '聊天区' }]

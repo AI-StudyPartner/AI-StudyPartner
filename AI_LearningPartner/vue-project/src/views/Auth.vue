@@ -35,10 +35,10 @@ const registerForm = reactive<RegisterForm>({
 
 const onLogin = () => {
   loading.value = true
-  axios.get('http://localhost:8080/login', {
+  axios.get('http://localhost:8080/login',{
     params:{
-      email: registerForm.email,
-      password: registerForm.password
+      email: loginForm.email,
+      password: loginForm.password
     }
   })
     .then(response => {
