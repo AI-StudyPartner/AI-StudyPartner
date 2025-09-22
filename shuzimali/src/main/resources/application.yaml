@@ -1,0 +1,18 @@
+server:
+  port: 8080
+spring:
+  ai:
+    dashscope:
+      api-key: sk-fec7e8ba4a8040be94d301f0fbc7fdb3
+      chat:
+        options:
+          model: deepseek-r1
+  datasource:
+    url: jdbc:mysql://localhost:3306/shuzimali
+    username: root
+    password: 123456
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true

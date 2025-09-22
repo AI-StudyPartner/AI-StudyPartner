@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.zjweu.cs.shuzimali.mapper.SetMapper">
+    <select id="selectSet">
+        select * from t_setting
+    </select>
+    <insert id="save">
+        insert into t_setting (personal_profile, preferred_study_time, daily_focus_minute, weekly_available_days, tone, response_length, allow_emojis, show_citations)
+        values (#{personalProfile}, #{preferredStudyTime}, #{dailyFocusMinute}, #{weeklyAvailableDays}, #{tone}, #{responseLength}, #{allowEmojis}, #{showCitations})
+    </insert>
+</mapper>
