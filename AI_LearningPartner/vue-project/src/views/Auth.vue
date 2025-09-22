@@ -35,7 +35,12 @@ const registerForm = reactive<RegisterForm>({
 
 const onLogin = () => {
   loading.value = true
-  axios.get('http://localhost:8080/login')
+  axios.get('http://localhost:8080/login', {
+    params:{
+      email: registerForm.email,
+      password: registerForm.password
+    }
+  })
     .then(response => {
       const users = response.data
       const user = users.find((u: any) => u.email === loginForm.email && u.password === loginForm.password)
