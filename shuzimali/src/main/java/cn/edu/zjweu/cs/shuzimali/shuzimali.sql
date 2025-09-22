@@ -1,10 +1,10 @@
 #用户表
 create table if not exists t_user (
-    user_id INT auto_increment  COMMENT '用户id',
+    id INT auto_increment  COMMENT '用户id',
     email varchar(255)  unique NOT NULL comment '邮箱',
     password VARCHAR(255) not null comment '密码',
     create_at DATETIME default current_timestamp COMMENT '注册时间',
-    primary key (user_id)
+    primary key (id)
 );
 # 聊天表
 CREATE TABLE IF NOT EXISTS t_chat(

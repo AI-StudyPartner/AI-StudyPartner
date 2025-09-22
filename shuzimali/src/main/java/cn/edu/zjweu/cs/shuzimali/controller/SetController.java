@@ -5,6 +5,7 @@ import cn.edu.zjweu.cs.shuzimali.Factory.UserFactory;
 import cn.edu.zjweu.cs.shuzimali.entity.Set;
 import cn.edu.zjweu.cs.shuzimali.mapper.SetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +18,12 @@ import java.util.List;
 public class SetController {
     @Autowired
     SetMapper setMapper;
-
+    @GetMapping("/show")
+    public Set show() {
+        int userId = Integer.parseInt(UserFactory.getUser().getId());
+        Set set = setMapper.selectSet(userId);
+        return set;
+    }
     /**
      *
      * @param profile

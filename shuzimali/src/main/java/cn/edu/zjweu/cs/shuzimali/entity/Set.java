@@ -9,6 +9,7 @@ public class Set {
     // 学习与作息
     private String preferredStudyTime;  // 喜好学习时间
     private int dailyFocusMinute; // 每天专注时间
+
     private List<String> weeklyAvailableDays; // 每周可用时间
     // AI偏好设置
     private String tone;

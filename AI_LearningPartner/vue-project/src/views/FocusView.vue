@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import axios from 'axios'
 import { 
   PlayCircleOutlined, 
   PauseCircleOutlined, 
@@ -212,41 +213,114 @@ const formatRecordTime = (isoString: string) => {
 }
 
 // 目标管理功能
-const addGoal = () => {
-  if (!newGoalTitle.value.trim()) return
-  
-  const goal: Goal = {
-    id: Date.now(),
-    title: newGoalTitle.value,
-    description: newGoalDescription.value,
-    type: newGoalType.value,
-    completed: false,
-    createdAt: new Date().toISOString()
+const loadGoals = async () => {
+  try {
+    const resp = await axios.get('http://localhost:8080/focus/show-goal')
+    const goals = resp?.data || []
+    
+    console.log('后端返回的目标数据:', goals) // 调试日志
+    
+    // 清空现有目标
+    shortTermGoals.value = []
+    longTermGoals.value = []
+    
+    // 根据 goalType 分类，并进行字段映射
+    goals.forEach((item: any) => {
+      const goal: Goal = {
+        id: item.goalId || item.goal_id || item.id,
+        title: item.title,
+        description: item.goalContent || item.goal_content || item.description || '',
+        type: item.goalType || item.goal_type || item.type,
+        completed: item.completed, 
+        createdAt: item.createAt || item.create_at || item.createdAt || new Date().toISOString()
+      }
+      
+      if (goal.type === 'short') {
+        shortTermGoals.value.push(goal)
+      } else if (goal.type === 'long') {
+        longTermGoals.value.push(goal)
+      }
+    })
+    
+    console.log('处理后的短期目标:', shortTermGoals.value)
+    console.log('处理后的长期目标:', longTermGoals.value)
+  } catch (e) {
+    console.error('加载目标失败', e)
   }
-  
-  if (newGoalType.value === 'short') {
-    shortTermGoals.value.push(goal)
-  } else {
-    longTermGoals.value.push(goal)
-  }
-  
-  // 重置表单
-  newGoalTitle.value = ''
-  newGoalDescription.value = ''
-  showAddGoal.value = false
 }
 
-const toggleGoal = (goalId: number, type: 'short' | 'long') => {
-  const goals = type === 'short' ? shortTermGoals.value : longTermGoals.value
-  const goal = goals.find(g => g.id === goalId)
-  if (goal) {
-    goal.completed = !goal.completed
+const addGoal = async () => {
+  if (!newGoalTitle.value.trim()) return
+  try {
+    // 根据目标类型选择不同的接口
+    const apiUrl = newGoalType.value === 'short' 
+      ? 'http://localhost:8080/focus/short-goal'
+      : 'http://localhost:8080/focus/long-goal'
+    
+    const resp = await axios.get(apiUrl, {
+      params: { 
+        [newGoalType.value === 'short' ? 'shortGoal' : 'longGoal']: newGoalDescription.value 
+        ,title : newGoalTitle.value
+      }
+    })
+    const returned = resp?.data
+    const goalId = typeof returned === 'object' && returned !== null && 'id' in returned
+      ? (returned as any).id
+      : Number(returned)
+
+    const goal: Goal = {
+      id: goalId,
+      title: newGoalTitle.value,
+      description: newGoalDescription.value,
+      type: newGoalType.value,
+      completed: false,
+      createdAt: new Date().toISOString()
+    }
+
+    if (newGoalType.value === 'short') {
+      shortTermGoals.value.push(goal)
+    } else {
+      longTermGoals.value.push(goal)
+    }
+
+    // 重置表单
+    newGoalTitle.value = ''
+    newGoalDescription.value = ''
+    showAddGoal.value = false
+  } catch (e) {
+    console.error('创建目标失败', e)
   }
 }
+
+const toggleGoal = async (goalId: number, type: 'short' | 'long') => {
+  const goals = type === 'short' ? shortTermGoals.value : longTermGoals.value
+  const goal = goals.find(g => g.id === goalId)
+
+  if (goal) {
+    try {
+      await axios.get("http://localhost:8080/focus/completed",{
+        params:{
+          goalId: goalId,
+          completed: !goal.completed
+        }
+      })
+      goal.completed = !goal.completed
+    } catch (error) {
+      console.error('更新目标状态失败:', error)
+      // 可以添加用户提示，如 message.error('更新失败')
+    }
+  }
+}
+
 
 const deleteGoal = (goalId: number, type: 'short' | 'long') => {
   const goals = type === 'short' ? shortTermGoals.value : longTermGoals.value
   const index = goals.findIndex(g => g.id === goalId)
+  axios.get("http://localhost:8080/focus/delete-goal",{
+    params:{
+        goalId : goalId
+    }
+  })
   if (index > -1) {
     goals.splice(index, 1)
   }
@@ -269,6 +343,9 @@ onMounted(() => {
   updateNow()
   const t = setInterval(updateNow, 1000)
   onUnmounted(() => clearInterval(t))
+  
+  // 加载目标列表
+  loadGoals()
 })
 </script>
 
