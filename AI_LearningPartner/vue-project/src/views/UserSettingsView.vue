@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from "axios";
 
 // 个人信息（改为自由文本）
 const personalProfile = ref('')
@@ -15,12 +16,61 @@ const responseLength = ref<'short' | 'medium' | 'long'>('medium')
 const allowEmojis = ref<boolean>(true)
 const showCitations = ref<boolean>(true)
 
-// 保存（当前仅本地模拟）
+// 加载状态
+const isLoading = ref(false)
 const isSaving = ref(false)
+
+// 页面挂载时加载用户设置
+onMounted(async () => {
+  await loadUserSettings()
+})
+
+// 加载用户设置
+const loadUserSettings = async () => {
+  try {
+    isLoading.value = true
+    const response = await axios.get("http://localhost:8080/set/show")
+    const settings = response.data
+    
+    if (settings) {
+      personalProfile.value = settings.personalProfile || ''
+      preferredStudyTime.value = settings.preferredStudyTime || ''
+      dailyFocusMinutes.value = settings.dailyFocusMinute || 90
+      weeklyAvailableDays.value = settings.weeklyAvailableDays || []
+      tone.value = settings.tone || 'friendly'
+      responseLength.value = settings.responseLength || 'medium'
+      allowEmojis.value = settings.allowEmojis !== null ? settings.allowEmojis : true
+      showCitations.value = settings.showCitations !== null ? settings.showCitations : true
+    }
+  } catch (error) {
+    console.error('加载用户设置失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 保存设置
 const saveSettings = async () => {
-  isSaving.value = true
-  await new Promise(r => setTimeout(r, 600))
-  isSaving.value = false
+  try {
+    isSaving.value = true
+    await axios.post("http://localhost:8080/set/save", {
+        personalProfile: personalProfile.value,
+        preferredStudyTime: preferredStudyTime.value,
+        dailyFocusMinute: dailyFocusMinutes.value,
+        weeklyAvailableDays: weeklyAvailableDays.value,
+        tone: tone.value,
+        responseLength: responseLength.value,
+        allowEmojis: allowEmojis.value,
+        showCitations: showCitations.value
+    },{
+      headers: {'Content-Type': 'application/json'}
+    })
+    console.log('设置保存成功')
+  } catch (error) {
+    console.error('保存设置失败:', error)
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
 

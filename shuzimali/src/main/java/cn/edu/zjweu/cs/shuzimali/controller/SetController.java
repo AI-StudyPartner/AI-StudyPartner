@@ -5,10 +5,7 @@ import cn.edu.zjweu.cs.shuzimali.Factory.UserFactory;
 import cn.edu.zjweu.cs.shuzimali.entity.Set;
 import cn.edu.zjweu.cs.shuzimali.mapper.SetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 import java.util.List;
@@ -26,39 +23,16 @@ public class SetController {
     }
     /**
      *
-     * @param profile
-     * @param preferredStudyTime
-     * @param dailyFocusMinute
-     * @param weeklyAvailableDays
-     * @param tone
-     * @param responseLength
-     * @param allowEmojis
-     * @param showCitations
      */
     @RequestMapping("/save")
-    public void save(@RequestParam(value = "personalProfile") String profile,
-                     @RequestParam(value = "preferredStudyTime") String preferredStudyTime,
-                     @RequestParam(value = "dailyFocusMinute") int dailyFocusMinute ,
-                     @RequestParam(value = "weeklyAvailableDays") List<String> weeklyAvailableDays,
-                     @RequestParam(value = "tone") String tone,
-                     @RequestParam(value = "responseLength") String responseLength,
-                     @RequestParam(value = "allowEmojis") Boolean allowEmojis,
-                     @RequestParam(value = "showCitations") Boolean showCitations
-    ) {
-
+    public void save(@RequestBody Set set) {
         int userId = Integer.parseInt(UserFactory.getUser().getId());
-        Set set = SetFactory.createSet(
-                userId,
-                profile,
-                preferredStudyTime,
-                dailyFocusMinute,
-                weeklyAvailableDays,
-                tone,
-                responseLength,
-                allowEmojis,
-                showCitations
-        );
-
-        setMapper.save(set);
+        set.setUserId(userId);
+        Set userSet = setMapper.selectSet(userId);
+        if (userSet != null){
+            setMapper.update(userId, set);
+        } else {
+            setMapper.save(set);
+        }
     }
 }
