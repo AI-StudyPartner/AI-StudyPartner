@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { onMounted } from 'vue'
 import { SendOutlined, PlusOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import axios from 'axios'
 
@@ -19,43 +20,46 @@ interface Message {
   attachments?: Array<{ name: string; type: string; url: string }>
 }
 
-// 解析后端返回的SSE文本，提取最新一条 data:{...} 里的 output.text
-function extractSseText(raw: string): string {
-  if (!raw) return ''
+// 从后端加载会话列表
+const loadConversations = async () => {
   try {
-    // 常见情况：多行包含 data: 前缀
-    const lines = raw.split(/\r?\n/)
-    const jsonPayloads: any[] = []
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed) continue
-      if (trimmed.startsWith('data:')) {
-        const jsonStr = trimmed.slice('data:'.length).trim()
-        try {
-          const obj = JSON.parse(jsonStr)
-          jsonPayloads.push(obj)
-        } catch (_) {
-          // 忽略非JSON行
-        }
-      } else {
-        // 有些网关可能直接返回JSON
-        try {
-          const obj = JSON.parse(trimmed)
-          jsonPayloads.push(obj)
-        } catch (_) {
-          // 忽略
-        }
-      }
+    const resp = await axios.get('http://localhost:8080/conversation/list')
+    const list = resp.data?.data ?? resp.data ?? []
+    const normalized: Conversation[] = (list as any[]).map(item => ({
+      id: item.id,
+      title: item.title || '新对话',
+      lastMessage: item.lastMessage || '',
+      time: item.updatedAt ? new Date(item.updatedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '刚刚'
+    }))
+    conversations.value = normalized
+    // 初始化映射
+    convIdToMessages.value = {}
+    // 默认选中第一条会话并加载消息
+    if (conversations.value.length > 0) {
+      await selectConversation(conversations.value[0].id)
     }
-    // 取最后一个包含 output.text 的对象
-    for (let i = jsonPayloads.length - 1; i >= 0; i--) {
-      const obj = jsonPayloads[i]
-      const text = obj?.output?.text
-      if (typeof text === 'string') return text
-    }
-    return ''
-  } catch {
-    return ''
+  } catch (e) {
+    console.warn('加载会话列表失败', e)
+  }
+}
+
+// 从后端加载指定会话的消息
+const loadMessages = async (conversationId: number) => {
+  try {
+    const resp = await axios.get(`http://localhost:8080/conversation/${conversationId}/messages`)
+    const list = resp.data?.data ?? resp.data ?? []
+    const normalized: Message[] = (list as any[]).map((m, idx) => ({
+      id: m.id ?? idx,
+      role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+      content: m.content ?? '',
+      time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '刚刚'
+    }))
+    convIdToMessages.value[conversationId] = normalized
+    messages.value = convIdToMessages.value[conversationId]
+  } catch (e) {
+    console.warn('加载消息失败', e)
+    convIdToMessages.value[conversationId] = []
+    messages.value = []
   }
 }
 
@@ -84,6 +88,55 @@ const removeAttach = (file: any) => {
   selectedFiles.value = selectedFiles.value.filter(f => f !== file)
 }
 
+// 调用后端创建会话
+const createConversationOnServer = async (): Promise<number> => {
+  const resp = await axios.post('http://localhost:8080/conversation/create', {
+    title: '新对话',
+    lastMessage: ''
+  })
+  return resp.data?.data ?? resp.data
+}
+
+// 确保存在后端会话并返回其ID；若当前为本地临时ID（时间戳），则替换为服务端ID
+const ensureConversationOnServer = async (): Promise<number> => {
+  const isTempId = (id: number | null) => {
+    if (!id) return true
+    return String(id).length >= 13
+  }
+
+  if (!currentConversation.value || isTempId(currentConversation.value)) {
+    const serverId = await createConversationOnServer()
+
+    if (currentConversation.value && convIdToMessages.value[currentConversation.value]) {
+      const oldId = currentConversation.value
+      convIdToMessages.value[serverId] = convIdToMessages.value[oldId]
+      delete convIdToMessages.value[oldId]
+      const idx = conversations.value.findIndex(c => c.id === oldId)
+      if (idx !== -1) {
+        conversations.value[idx].id = serverId
+      }
+    } else {
+      convIdToMessages.value[serverId] = []
+    }
+
+    if (!conversations.value.find(c => c.id === serverId)) {
+      const newConv: Conversation = {
+        id: serverId,
+        title: '新对话',
+        lastMessage: '',
+        time: '刚刚'
+      }
+      conversations.value.unshift(newConv)
+    }
+
+    currentConversation.value = serverId
+    messages.value = convIdToMessages.value[serverId]
+    return serverId
+  }
+
+  return currentConversation.value
+}
+
 // 发送消息
 const sendMessage = async () => {
   if (!inputValue.value.trim()) return
@@ -100,21 +153,10 @@ const sendMessage = async () => {
     }))
   }
 
-  // 如果没有会话，自动创建
-  if (!currentConversation.value) {
-    const newConv: Conversation = {
-      id: Date.now(),
-      title: '新对话',
-      lastMessage: '',
-      time: '刚刚'
-    }
-    conversations.value.unshift(newConv)
-    currentConversation.value = newConv.id
-    convIdToMessages.value[newConv.id] = []
-    messages.value = convIdToMessages.value[newConv.id]
-  }
+  // 确保使用服务端真实会话ID
+  const conversationId = await ensureConversationOnServer()
 
-  // 追加到当前会话消息
+  // 追加到当前会话消息（本地）
   if (currentConversation.value) {
     if (!convIdToMessages.value[currentConversation.value]) {
       convIdToMessages.value[currentConversation.value] = []
@@ -126,16 +168,25 @@ const sendMessage = async () => {
   inputValue.value = ''
   selectedFiles.value = []
 
+  // 将用户消息持久化
+  try {
+    await axios.post(`http://localhost:8080/conversation/${conversationId}/message`, {
+      role: 'user',
+      content: newMessage.content
+    })
+  } catch (e) {
+    console.warn('保存用户消息失败（不影响前端显示）', e)
+  }
+
   // 调用AI API（流式）
   isTyping.value = true
   try {
     const payload = {
       content: newMessage.content,
       memoryId: localStorage.getItem('aliyun_memory_id') || undefined,
-      // knowledgeBaseId: ['uhym8y9eq3']
     }
 
-    // 先放一个占位的助手消息，后续逐步填充内容
+    // 占位的助手消息（用于流式增量）
     const assistantMsg: Message = {
       id: Date.now() + 1,
       role: 'assistant',
@@ -170,7 +221,6 @@ const sendMessage = async () => {
       if (done) break
       buffer += decoder.decode(value, { stream: true })
 
-      // 以换行拆分，尽可能处理完整的行，剩余半行留到下次
       const parts = buffer.split(/\r?\n/)
       buffer = parts.pop() || ''
 
@@ -183,20 +233,16 @@ const sendMessage = async () => {
             const obj = JSON.parse(payloadStr)
             const fullText = obj?.output?.text
             if (typeof fullText === 'string') {
-              // 计算增量（不少后端会推送完整前缀文本）
               let delta = ''
               if (fullText.startsWith(lastFullText)) {
                 delta = fullText.slice(lastFullText.length)
               } else {
-                // 后端可能只推送片段，直接使用
                 delta = fullText
               }
               assistantMsg.content += delta
               lastFullText = fullText
             }
-          } catch (_) {
-            // 忽略非JSON
-          }
+          } catch (_) {}
         }
       }
 
@@ -221,6 +267,16 @@ const sendMessage = async () => {
         }
       } catch (_) {}
     }
+
+    // 持久化助手消息
+    try {
+      await axios.post(`http://localhost:8080/conversation/${conversationId}/message`, {
+        role: 'assistant',
+        content: assistantMsg.content
+      })
+    } catch (e) {
+      console.warn('保存助手消息失败（不影响前端显示）', e)
+    }
   } catch (error) {
     console.error('API调用失败:', error)
     const errorReply: Message = {
@@ -231,7 +287,6 @@ const sendMessage = async () => {
     }
     messages.value.push(errorReply)
   } finally {
-    // 确保结束时不显示打字指示器
     isTyping.value = false
     // 更新会话预览
     if (currentConversation.value) {
@@ -244,10 +299,11 @@ const sendMessage = async () => {
   }
 }
 
-// 新建对话
-const createNewConversation = () => {
+// 新建对话：服务端创建
+const createNewConversation = async () => {
+  const serverId = await createConversationOnServer()
   const newConv: Conversation = {
-    id: Date.now(),
+    id: serverId,
     title: '新对话',
     lastMessage: '',
     time: '刚刚'
@@ -258,30 +314,15 @@ const createNewConversation = () => {
   messages.value = convIdToMessages.value[newConv.id]
 }
 
-// 选择对话
-const selectConversation = (id: number) => {
+// 选择对话：加载后端消息
+const selectConversation = async (id: number) => {
   currentConversation.value = id
-  messages.value = convIdToMessages.value[id] || []
+  await loadMessages(id)
 }
 
-// 删除对话
-const deleteConversation = (id: number) => {
-  const index = conversations.value.findIndex(c => c.id === id)
-  if (index === -1) return
-  conversations.value.splice(index, 1)
-  delete convIdToMessages.value[id]
-
-  if (currentConversation.value === id) {
-    if (conversations.value.length > 0) {
-      const newId = conversations.value[0].id
-      currentConversation.value = newId
-      messages.value = convIdToMessages.value[newId] || []
-    } else {
-      currentConversation.value = null
-      messages.value = []
-    }
-  }
-}
+onMounted(async () => {
+  await loadConversations()
+})
 </script>
 
 <template>

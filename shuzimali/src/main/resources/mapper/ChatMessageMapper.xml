@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.edu.zjweu.cs.shuzimali.mapper.ChatMessageMapper">
+    <resultMap id="ChatMessageMap" type="cn.edu.zjweu.cs.shuzimali.entity.ChatMessage">
+        <id property="id" column="id"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="role" column="role"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="listByConversation" resultMap="ChatMessageMap">
+        select id, conversation_id, user_id, role, content, created_at
+        from t_chat_message
+        where conversation_id = #{conversationId} and user_id = #{userId}
+        order by id asc
+    </select>
+
+    <insert id="insert" parameterType="cn.edu.zjweu.cs.shuzimali.entity.ChatMessage" useGeneratedKeys="true" keyProperty="id">
+        insert into t_chat_message (conversation_id, user_id, role, content, created_at)
+        values (#{conversationId}, #{userId}, #{role}, #{content}, now())
+    </insert>
+</mapper>
+
+
