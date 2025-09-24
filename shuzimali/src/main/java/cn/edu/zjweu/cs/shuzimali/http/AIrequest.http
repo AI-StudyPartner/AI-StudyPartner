@@ -1,0 +1,7 @@
+POST http://localhost:8080/aliyunbailian/application/chat
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+"content":"你认识张晓明吗"
+}

@@ -19,6 +19,46 @@ interface Message {
   attachments?: Array<{ name: string; type: string; url: string }>
 }
 
+// 解析后端返回的SSE文本，提取最新一条 data:{...} 里的 output.text
+function extractSseText(raw: string): string {
+  if (!raw) return ''
+  try {
+    // 常见情况：多行包含 data: 前缀
+    const lines = raw.split(/\r?\n/)
+    const jsonPayloads: any[] = []
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+      if (trimmed.startsWith('data:')) {
+        const jsonStr = trimmed.slice('data:'.length).trim()
+        try {
+          const obj = JSON.parse(jsonStr)
+          jsonPayloads.push(obj)
+        } catch (_) {
+          // 忽略非JSON行
+        }
+      } else {
+        // 有些网关可能直接返回JSON
+        try {
+          const obj = JSON.parse(trimmed)
+          jsonPayloads.push(obj)
+        } catch (_) {
+          // 忽略
+        }
+      }
+    }
+    // 取最后一个包含 output.text 的对象
+    for (let i = jsonPayloads.length - 1; i >= 0; i--) {
+      const obj = jsonPayloads[i]
+      const text = obj?.output?.text
+      if (typeof text === 'string') return text
+    }
+    return ''
+  } catch {
+    return ''
+  }
+}
+
 const conversations = ref<Conversation[]>([])
 // 每个会话的消息映射
 const convIdToMessages = ref<Record<number, Message[]>>({})
@@ -86,32 +126,112 @@ const sendMessage = async () => {
   inputValue.value = ''
   selectedFiles.value = []
 
-  // 调用AI API
+  // 调用AI API（流式）
   isTyping.value = true
   try {
-    const response = await axios.get('http://localhost:8080/chat/ai', {
-      params: {
-        input: newMessage.content
-      }
-    })
+    const payload = {
+      content: newMessage.content,
+      memoryId: localStorage.getItem('aliyun_memory_id') || undefined,
+      // knowledgeBaseId: ['uhym8y9eq3']
+    }
 
-    const aiReply: Message = {
+    // 先放一个占位的助手消息，后续逐步填充内容
+    const assistantMsg: Message = {
       id: Date.now() + 1,
       role: 'assistant',
-      content: response.data,
+      content: '',
       time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     }
-    messages.value.push(aiReply)
+    messages.value.push(assistantMsg)
+
+    // 已有占位助手消息，关闭全局打字指示器，避免出现第二个AI气泡
+    isTyping.value = false
+
+    const response = await fetch('http://localhost:8080/aliyunbailian/application/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok || !response.body) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
+    let lastFullText = ''
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+
+      // 以换行拆分，尽可能处理完整的行，剩余半行留到下次
+      const parts = buffer.split(/\r?\n/)
+      buffer = parts.pop() || ''
+
+      for (const line of parts) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        if (trimmed.startsWith('data:')) {
+          const payloadStr = trimmed.slice('data:'.length).trim()
+          try {
+            const obj = JSON.parse(payloadStr)
+            const fullText = obj?.output?.text
+            if (typeof fullText === 'string') {
+              // 计算增量（不少后端会推送完整前缀文本）
+              let delta = ''
+              if (fullText.startsWith(lastFullText)) {
+                delta = fullText.slice(lastFullText.length)
+              } else {
+                // 后端可能只推送片段，直接使用
+                delta = fullText
+              }
+              assistantMsg.content += delta
+              lastFullText = fullText
+            }
+          } catch (_) {
+            // 忽略非JSON
+          }
+        }
+      }
+
+      // 更新会话预览
+      if (currentConversation.value) {
+        const conv = conversations.value.find(c => c.id === currentConversation.value)
+        if (conv) {
+          conv.lastMessage = assistantMsg.content
+          conv.time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        }
+      }
+    }
+
+    // 处理buffer里最后半行
+    if (buffer.trim().startsWith('data:')) {
+      try {
+        const obj = JSON.parse(buffer.trim().slice('data:'.length).trim())
+        const fullText = obj?.output?.text
+        if (typeof fullText === 'string') {
+          const delta = fullText.startsWith(lastFullText) ? fullText.slice(lastFullText.length) : fullText
+          assistantMsg.content += delta
+        }
+      } catch (_) {}
+    }
   } catch (error) {
     console.error('API调用失败:', error)
     const errorReply: Message = {
-      id: Date.now() + 1,
+      id: Date.now() + 2,
       role: 'assistant',
       content: '抱歉，AI服务暂时不可用，请稍后再试。',
       time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     }
     messages.value.push(errorReply)
   } finally {
+    // 确保结束时不显示打字指示器
     isTyping.value = false
     // 更新会话预览
     if (currentConversation.value) {
@@ -223,7 +343,12 @@ const deleteConversation = (id: number) => {
               </a-avatar>
             </div>
             <div class="message-content">
-              <div class="message-text">{{ message.content }}</div>
+              <template v-if="message.role === 'assistant' && !message.content">
+                <div class="typing-indicator"><span></span><span></span><span></span></div>
+              </template>
+              <template v-else>
+                <div class="message-text">{{ message.content }}</div>
+              </template>
               <div v-if="message.attachments && message.attachments.length" class="attachments">
                 <template v-for="att in message.attachments">
                   <img v-if="att.type.startsWith('image/')" :src="att.url" class="att-image" :alt="att.name" />
@@ -433,12 +558,13 @@ const deleteConversation = (id: number) => {
 }
 
 .message-content {
-  flex: 1;
   max-width: 70%;
+  display: inline-block;
 }
 
 .message.user .message-content {
   text-align: right;
+  align-self: flex-end;
 }
 
 .message-text {

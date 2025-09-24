@@ -19,6 +19,7 @@
 	</properties>
 	<dependencyManagement>
 		<dependencies>
+
 			<dependency>
 				<groupId>com.alibaba.cloud.ai</groupId>
 				<artifactId>spring-ai-alibaba-bom</artifactId>
@@ -51,7 +52,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-json</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -66,7 +66,8 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+			<version>1.18.30</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -89,7 +90,83 @@
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-memory</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>bailian20231229</artifactId>
+			<version>2.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>dysmsapi20170525</artifactId>
+			<version>2.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>tea-openapi</artifactId>
+			<version>0.2.8</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>tea-console</artifactId>
+			<version>0.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>darabonba-env</artifactId>
+			<version>0.1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>tea-util</artifactId>
+			<version>0.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>darabonba-time</artifactId>
+			<version>0.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>darabonba-string</artifactId>
+			<version>0.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web-services</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.aliyun</groupId>
+			<artifactId>tea</artifactId>
+			<version>[1.0.3, 2.0.0]</version>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>dashscope-sdk-java</artifactId>
+			<version>2.21.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-simple</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>4.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -97,26 +174,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</path>
-					</annotationProcessorPaths>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
