@@ -59,6 +59,35 @@ const topicStats = computed(() => {
 
 const pieColors = ['#1677ff', '#52c41a', '#faad14', '#eb2f96', '#13c2c2']
 
+// 近7天学习时长（小时，Mock）
+const weekHours = ref<number[]>([2.5, 3, 4, 1, 0.5, 5, 6])
+const maxHour = computed(() => Math.max(1, ...weekHours.value))
+const weekPoints = computed(() => {
+  const w = 320, h = 160, pad = 28
+  const innerW = w - pad * 2
+  const innerH = h - pad * 2
+  const stepX = innerW / (weekHours.value.length - 1)
+  return weekHours.value.map((v, i) => {
+    const x = pad + i * stepX
+    const y = pad + innerH - (v / maxHour.value) * innerH
+    return `${x},${y}`
+  }).join(' ')
+})
+const weekLabels = computed(() => {
+  const days = ['一','二','三','四','五','六','日']
+  const today = new Date().getDay() || 7
+  return Array.from({ length: 7 }, (_, i) => days[(today - 7 + 1 + i) % 7])
+})
+const weekTotal = computed(() => weekHours.value.reduce((a,b)=>a+b,0))
+const aiComment = computed(() => {
+  const anyOver8 = weekHours.value.some(h => h >= 8)
+  const recentAvg = weekHours.value.slice(-3).reduce((a,b)=>a+b,0)/3
+  const prevAvg = weekHours.value.slice(0,4).reduce((a,b)=>a+b,0)/4
+  if (recentAvg + 0.01 < prevAvg) return `最近3天平均 ${recentAvg.toFixed(1)} 小时，低于前段时间 ${prevAvg.toFixed(1)} 小时。别松懈，我们一起稳住节奏！`
+  if (anyOver8) return `本周出现高强度专注（≥8小时），太棒了！保持休息与补水，持续稳步推进～`
+  if (weekTotal.value >= 20) return `本周累计 ${weekTotal.value.toFixed(1)} 小时，进度良好，继续冲！`
+  return `本周累计 ${weekTotal.value.toFixed(1)} 小时。建议设定一个每日小目标，循序渐进更稳。`
+})
 
 // 目标管理相关状态
 interface Goal {
@@ -329,163 +358,192 @@ onMounted(() => {
     </div>
 
     <div class="focus-content">
-      <!-- 番茄钟 -->
-      <div class="pomodoro-card">
-        <div class="pomodoro-header">
-          <h2 class="section-title">番茄钟</h2>
-          <a-space>
+      <!-- 左侧：番茄钟 -->
+      <div class="pomodoro-section">
+        <div class="pomodoro-card">
+          <div class="pomodoro-header">
+            <h2 class="section-title">番茄钟</h2>
+            <a-space>
+              <a-button 
+                type="text" 
+                size="small" 
+                @click="timerStyle = timerStyle === 'ring' ? 'digital' : 'ring'"
+                class="settings-btn"
+              >
+                <template #icon>
+                  <FieldTimeOutlined />
+                </template>
+                切换样式
+              </a-button>
+              <a-button 
+                type="text" 
+                size="small" 
+                @click="isFullscreen = !isFullscreen"
+                class="settings-btn"
+              >
+                <template #icon>
+                  <component :is="isFullscreen ? FullscreenExitOutlined : FullscreenOutlined" />
+                </template>
+                {{ isFullscreen ? '退出全屏' : '全屏' }}
+              </a-button>
+              <a-button 
+                type="text" 
+                size="small" 
+                @click="showTimeSettings = true"
+                class="settings-btn"
+              >
+                <template #icon>
+                  <EditOutlined />
+                </template>
+                设置时间
+              </a-button>
+            </a-space>
+          </div>
+          
+          <!-- 计时展示 -->
+          <div class="timer-container" :class="['style-'+timerStyle]">
+            <div class="timer-circle" v-if="timerStyle==='ring'">
+              <svg class="progress-ring" width="200" height="200">
+                <circle
+                  class="progress-ring-circle-bg"
+                  stroke="#f0f0f0"
+                  stroke-width="8"
+                  fill="transparent"
+                  r="90"
+                  cx="100"
+                  cy="100"
+                />
+                <circle
+                  class="progress-ring-circle"
+                  stroke="#1677ff"
+                  stroke-width="8"
+                  fill="transparent"
+                  r="90"
+                  cx="100"
+                  cy="100"
+                  :stroke-dasharray="`${2 * Math.PI * 90}`"
+                  :stroke-dashoffset="`${2 * Math.PI * 90 * (1 - progress / 100)}`"
+                />
+              </svg>
+              <div class="timer-display">
+                <div class="time-text">{{ formatTime(timeLeft) }}</div>
+                <div class="timer-status">
+                  <span v-if="!isRunning && !isPaused">准备开始</span>
+                  <span v-else-if="isPaused">已暂停</span>
+                  <span v-else>专注中</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="digital-time">{{ nowDisplay }}</div>
+          </div>
+
+          <!-- 控制按钮 -->
+          <div class="timer-controls">
             <a-button 
-              type="text" 
-              size="small" 
-              @click="timerStyle = timerStyle === 'ring' ? 'digital' : 'ring'"
-              class="settings-btn"
+              v-if="!isRunning" 
+              type="primary" 
+              size="large" 
+              @click="startTimer"
+              class="control-btn"
             >
               <template #icon>
-                <FieldTimeOutlined />
+                <PlayCircleOutlined />
               </template>
-              切换样式
+              开始
             </a-button>
+            
             <a-button 
-              type="text" 
-              size="small" 
-              @click="isFullscreen = !isFullscreen"
-              class="settings-btn"
+              v-else-if="isPaused" 
+              type="primary" 
+              size="large" 
+              @click="startTimer"
+              class="control-btn"
             >
               <template #icon>
-                <component :is="isFullscreen ? FullscreenExitOutlined : FullscreenOutlined" />
+                <PlayCircleOutlined />
               </template>
-              {{ isFullscreen ? '退出全屏' : '全屏' }}
+              继续
             </a-button>
+            
             <a-button 
-              type="text" 
-              size="small" 
-              @click="showTimeSettings = true"
-              class="settings-btn"
+              v-else 
+              type="default" 
+              size="large" 
+              @click="pauseTimer"
+              class="control-btn"
             >
               <template #icon>
-                <EditOutlined />
+                <PauseCircleOutlined />
               </template>
-              设置时间
+              暂停
             </a-button>
-          </a-space>
+            
+            <a-button 
+              type="text" 
+              size="large" 
+              @click="resetTimer"
+              class="control-btn"
+            >
+              <template #icon>
+                <ReloadOutlined />
+              </template>
+              重置
+            </a-button>
+          </div>
         </div>
-        
-        <!-- 计时展示 -->
-        <div class="timer-container" :class="['style-'+timerStyle]">
-          <div class="timer-circle" v-if="timerStyle==='ring'">
-            <svg class="progress-ring" width="200" height="200">
-              <circle
-                class="progress-ring-circle-bg"
-                stroke="#f0f0f0"
-                stroke-width="8"
-                fill="transparent"
-                r="90"
-                cx="100"
-                cy="100"
-              />
-              <circle
-                class="progress-ring-circle"
-                stroke="#1677ff"
-                stroke-width="8"
-                fill="transparent"
-                r="90"
-                cx="100"
-                cy="100"
-                :stroke-dasharray="`${2 * Math.PI * 90}`"
-                :stroke-dashoffset="`${2 * Math.PI * 90 * (1 - progress / 100)}`"
-              />
+
+        <!-- 番茄钟统计饼图 -->
+        <div class="records-card">
+          <h2 class="section-title">专注统计</h2>
+          <div v-if="topicStats.total === 0" class="empty-records"><p>暂无记录</p></div>
+          <div v-else class="pie-wrap">
+            <svg viewBox="0 0 64 64" class="pie">
+              <template v-for="(e, idx) in topicStats.entries">
+                <circle r="20" cx="32" cy="32" pathLength="100"
+                  :stroke-dasharray="((e.duration / topicStats.total) * 100) + ' ' + (100 - (e.duration / topicStats.total) * 100)"
+                  :stroke-dashoffset="topicStats.entries.slice(0, idx).reduce((s, p) => s + (p.duration/topicStats.total)*100, 0)"
+                  :style="{ '--c': pieColors[idx % pieColors.length] }"/>
+              </template>
             </svg>
-            <div class="timer-display">
-              <div class="time-text">{{ formatTime(timeLeft) }}</div>
-              <div class="timer-status">
-                <span v-if="!isRunning && !isPaused">准备开始</span>
-                <span v-else-if="isPaused">已暂停</span>
-                <span v-else>专注中</span>
+            <div class="legend">
+              <div class="legend-item" v-for="(e, idx) in topicStats.entries" :key="e.topic">
+                <span class="dot" :style="{ background: pieColors[idx % pieColors.length] }"></span>
+                <span class="name">{{ e.topic }}</span>
+                <span class="val">{{ Math.round((e.duration / topicStats.total) * 100) }}%</span>
               </div>
             </div>
           </div>
-          <div v-else class="digital-time">{{ nowDisplay }}</div>
-        </div>
-
-        <!-- 控制按钮 -->
-        <div class="timer-controls">
-          <a-button 
-            v-if="!isRunning" 
-            type="primary" 
-            size="large" 
-            @click="startTimer"
-            class="control-btn"
-          >
-            <template #icon>
-              <PlayCircleOutlined />
-            </template>
-            开始
-          </a-button>
-          
-          <a-button 
-            v-else-if="isPaused" 
-            type="primary" 
-            size="large" 
-            @click="startTimer"
-            class="control-btn"
-          >
-            <template #icon>
-              <PlayCircleOutlined />
-            </template>
-            继续
-          </a-button>
-          
-          <a-button 
-            v-else 
-            type="default" 
-            size="large" 
-            @click="pauseTimer"
-            class="control-btn"
-          >
-            <template #icon>
-              <PauseCircleOutlined />
-            </template>
-            暂停
-          </a-button>
-          
-          <a-button 
-            type="text" 
-            size="large" 
-            @click="resetTimer"
-            class="control-btn"
-          >
-            <template #icon>
-              <ReloadOutlined />
-            </template>
-            重置
-          </a-button>
         </div>
       </div>
 
-      <!-- 番茄钟统计饼图 -->
+      <!-- 近一周学习时长折线图（Mock） -->
       <div class="records-card">
-        <h2 class="section-title">专注统计</h2>
-        <div v-if="topicStats.total === 0" class="empty-records"><p>暂无记录</p></div>
-        <div v-else class="pie-wrap">
-          <svg viewBox="0 0 64 64" class="pie">
-            <template v-for="(e, idx) in topicStats.entries">
-              <circle r="20" cx="32" cy="32" pathLength="100"
-                :stroke-dasharray="((e.duration / topicStats.total) * 100) + ' ' + (100 - (e.duration / topicStats.total) * 100)"
-                :stroke-dashoffset="topicStats.entries.slice(0, idx).reduce((s, p) => s + (p.duration/topicStats.total)*100, 0)"
-                :style="{ '--c': pieColors[idx % pieColors.length] }"/>
-            </template>
+        <h2 class="section-title">近一周学习时长</h2>
+        <div class="week-chart">
+          <svg :viewBox="`0 0 320 160`" class="linechart">
+            <defs>
+              <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1677ff" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#1677ff" stop-opacity="0.02" />
+              </linearGradient>
+            </defs>
+            <polyline :points="weekPoints" fill="none" stroke="#1677ff" stroke-width="2" />
+            <polygon :points="`${weekPoints} 292,132 28,132`" fill="url(#areaFill)" />
+            <g v-for="(v,i) in weekHours" :key="i">
+              <circle :cx="28 + i*(264/6)" :cy="132 - (v/maxHour)*104" r="3" fill="#1677ff" />
+            </g>
+            <g class="axes">
+              <line x1="28" y1="28" x2="28" y2="132" stroke="#e5e7eb" />
+              <line x1="28" y1="132" x2="292" y2="132" stroke="#e5e7eb" />
+              <text v-for="(d,i) in weekLabels" :key="'d'+i" :x="28 + i*(264/6)" y="148" text-anchor="middle" fill="#6b7280" font-size="10">周{{ d }}</text>
+              <text x="0" y="32" fill="#6b7280" font-size="10">(小时)</text>
+            </g>
           </svg>
-          <div class="legend">
-            <div class="legend-item" v-for="(e, idx) in topicStats.entries" :key="e.topic">
-              <span class="dot" :style="{ background: pieColors[idx % pieColors.length] }"></span>
-              <span class="name">{{ e.topic }}</span>
-              <span class="val">{{ Math.round((e.duration / topicStats.total) * 100) }}%</span>
-            </div>
-          </div>
         </div>
+        <div class="ai-comment">{{ aiComment }}</div>
       </div>
 
-      <!-- 目标管理 -->
+      <!-- 右侧：目标管理 -->
       <div class="goals-section">
         <!-- 短期目标 -->
         <div class="goals-card">
@@ -752,6 +810,7 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+.pomodoro-section,
 .goals-section {
   display: flex;
   flex-direction: column;
@@ -1067,6 +1126,10 @@ onMounted(() => {
 .legend-item .name { flex: 1; color: #374151; }
 .legend-item .val { color: #6b7280; }
 
+/* 周学习时长折线图 */
+.week-chart { width: 100%; }
+.linechart { width: 100%; height: 200px; }
+.ai-comment { margin-top: 8px; color: #374151; background: #f8fafc; border: 1px solid #eef2f7; padding: 8px 12px; border-radius: 8px; }
 
 /* 时间设置相关样式 */
 .time-settings h4 {

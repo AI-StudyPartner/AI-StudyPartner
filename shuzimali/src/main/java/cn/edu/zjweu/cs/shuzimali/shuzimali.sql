@@ -27,27 +27,15 @@ create table if not exists t_tomato(
     foreign key (user_id) references t_user(id)
 );
 #目标表
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
--- ----------------------------
--- Table structure for t_goal
--- ----------------------------
-DROP TABLE IF EXISTS `t_goal`;
-CREATE TABLE `t_goal`  (
-                           `goal_id` int NOT NULL AUTO_INCREMENT COMMENT '目标ID',
-                           `user_id` int NULL DEFAULT NULL COMMENT '用户ID',
-                           `goal_type` enum('short','long') CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NOT NULL COMMENT '短期/长期',
-                           `goal_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NOT NULL COMMENT '目标内容',
-                           `create_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NOT NULL COMMENT '标题',
-                           `completed` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否完成',
-                           PRIMARY KEY (`goal_id`) USING BTREE,
-                           INDEX `user_id`(`user_id` ASC) USING BTREE,
-                           CONSTRAINT `t_goal_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `t_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_da_0900_ai_ci ROW_FORMAT = Dynamic;
-
-SET FOREIGN_KEY_CHECKS = 1;
+create table if not exists t_goal(
+    goal_id int auto_increment comment '目标ID',
+    user_id int comment '用户ID',
+    goal_type enum('short','long') not null comment '短期/长期',
+    goal_content varchar(255) not null comment '目标内容',
+    create_at datetime default current_timestamp comment '创建时间',
+    primary key (goal_id),
+    foreign key (user_id) references t_user(id)
+);
 #复盘表
 create table if not exists t_review(
     file_id bigint auto_increment comment '文件ID',
@@ -105,28 +93,11 @@ create table if not exists t_plan(
     foreign key (user_id) references t_user(id)
 );
 #用户设置表
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
--- ----------------------------
--- Table structure for t_setting
--- ----------------------------
-DROP TABLE IF EXISTS `t_setting`;
-CREATE TABLE `t_setting`  (
-                              `setting_id` int NOT NULL AUTO_INCREMENT COMMENT '设置ID',
-                              `user_id` int NULL DEFAULT NULL COMMENT '用户ID',
-                              `personal_profile` char(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NULL DEFAULT NULL,
-                              `create_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                              `preferred_study_time` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NULL DEFAULT NULL COMMENT '喜好学习时间',
-                              `daily_focus_minute` int NULL DEFAULT NULL COMMENT '每天专注时间',
-                              `weekly_available_days` json NULL,
-                              `tone` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NULL DEFAULT NULL COMMENT '语句',
-                              `response_length` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_da_0900_ai_ci NULL DEFAULT NULL COMMENT '回复长度',
-                              `allow_emojis` tinyint(1) NULL DEFAULT NULL COMMENT '是否允许emoji',
-                              `show_citations` tinyint(1) NULL DEFAULT NULL COMMENT '是否显示引证',
-                              PRIMARY KEY (`setting_id`) USING BTREE,
-                              INDEX `user_id`(`user_id` ASC) USING BTREE,
-                              CONSTRAINT `t_setting_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `t_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_da_0900_ai_ci ROW_FORMAT = Dynamic;
-
-SET FOREIGN_KEY_CHECKS = 1;
+create table if not exists t_setting(
+    setting_id int auto_increment comment '设置ID',
+    user_id int comment '用户ID',
+    profile_text text comment '个人简介',
+    create_at datetime default current_timestamp comment '创建时间',
+    primary key (setting_id),
+    foreign key (user_id) references t_user(id)
+);

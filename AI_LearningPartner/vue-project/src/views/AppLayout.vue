@@ -113,9 +113,6 @@ const onMenuClick = (info: MenuClickInfo) => {
             To 就业
           </a-menu-item>
         </a-sub-menu>
-
-        
-
         <a-menu-item key="user-settings">
           <template #icon>
             <SettingOutlined />

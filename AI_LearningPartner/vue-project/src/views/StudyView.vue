@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const scheduleFiles = ref<any[]>([])
@@ -68,10 +68,8 @@ const uploadAndIndex = async () => {
 }
 
 
-const upcomingExams = ref([
-  { id: 1, name: '大学英语六级', date: '2025-12-15', daysLeft: 89 },
-  { id: 2, name: '软考中级', date: '2025-11-20', daysLeft: 64 },
-])
+
+const upcomingExams = ref()
 
 // 从后端获取考试列表
 const fetchExams = async () => {
@@ -101,7 +99,7 @@ const deleteExam = async (examId: number) => {
   try {
     const response = await axios.delete(`http://localhost:8080/exam/delete/${examId}`)
     if (response.data.code === 1) {
-      upcomingExams.value = upcomingExams.value.filter(exam => exam.id !== examId)
+      upcomingExams.value = upcomingExams.value.filter((exam: { id: number }) => exam.id !== examId)
     } else {
       console.error('删除考试失败:', response.data.msg)
     }
@@ -132,9 +130,10 @@ const addExam = async () => {
         const today = new Date()
         const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
-        // 添加到列表中
+        // 使用后端返回的实际考试ID
+        const addedExam = response.data.data
         upcomingExams.value.push({
-          id: Date.now(), // 实际项目中应该使用后端返回的ID
+          id: addedExam.examId || addedExam.id,
           name: newExam.value.name,
           date: newExam.value.date,
           daysLeft: daysLeft
@@ -144,12 +143,26 @@ const addExam = async () => {
         showAddExamModal.value = false
       } else {
         console.error('添加考试失败:', response.data.msg)
+        // 即使添加失败也要关闭模态框
+        showAddExamModal.value = false
       }
     } catch (error) {
       console.error('添加考试失败:', error)
+      // 出现异常也要关闭模态框
+      showAddExamModal.value = false
     }
   }
 }
+
+// 组件挂载时获取考试列表
+onMounted(() => {
+  fetchExams()
+})
+
+
+
+
+
 
 
 
@@ -177,10 +190,10 @@ const addExam = async () => {
           <p class="hint">{{ uploadHint }}</p>
         </div>
 
-      </div>
 
-      <!-- 右列：AI建议 + 已学课程 + 考试倒计时 + 推荐视频 -->
-      <div class="right">
+
+
+
 
         <div class="card">
           <div class="row-header">
@@ -203,7 +216,6 @@ const addExam = async () => {
             </template>
           </a-list>
         </div>
-
       </div>
     </div>
 
@@ -317,6 +329,26 @@ const addExam = async () => {
   font-weight: 500;
 }
 
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.video-card {
+  padding: 0;
+}
+
+.cover {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.v-title {
+  margin-top: 8px;
+}
 
 .row-header {
   display: flex;
@@ -325,11 +357,90 @@ const addExam = async () => {
   margin-bottom: 8px;
 }
 
+.course-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.course-item {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  font-size: 14px;
+  color: #495057;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.learned-course-item {
+  padding: 6px 10px;
+  font-size: 13px;
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  color: #1976d2;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ai-suggestions-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid #e0f2fe;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.suggestion-content {
+  flex: 1;
+}
+
+.suggestion-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0369a1;
+  margin-bottom: 4px;
+}
+
+.suggestion-text {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
 
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;
   }
 
+  .video-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 </style>
