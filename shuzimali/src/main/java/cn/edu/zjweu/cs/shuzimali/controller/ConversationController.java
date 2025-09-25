@@ -58,6 +58,14 @@ public class ConversationController {
         resp.put("messageId", message.getId());
         return Result.success(resp);
     }
+
+    @DeleteMapping("/{conversationId}")
+    public Result delete(@PathVariable("conversationId") long conversationId) {
+        int userId = Integer.parseInt(UserFactory.getUser().getId());
+        // 可以添加额外的权限检查，确保用户只能删除自己的对话
+        conversationMapper.deleteById(conversationId);
+        return Result.success();
+    }
 }
 
 

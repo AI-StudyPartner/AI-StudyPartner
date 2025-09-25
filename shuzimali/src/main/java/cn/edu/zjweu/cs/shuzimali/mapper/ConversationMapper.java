@@ -9,6 +9,7 @@ public interface ConversationMapper {
     List<Conversation> listByUserId(@Param("userId") int userId);
     void insert(Conversation conversation);
     void updateLastMessage(@Param("id") long id, @Param("lastMessage") String lastMessage);
+    void deleteById(@Param("id") long id);
 }
 
 
