@@ -1,7 +1,10 @@
 package cn.edu.zjweu.cs.shuzimali.controller;
 
+import cn.edu.zjweu.cs.shuzimali.entity.Set;
+import cn.edu.zjweu.cs.shuzimali.mapper.SetMapper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -11,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/chat")
 public class ChatController {
     private final ChatClient dashScopeChatClient;
+
+    @Autowired
+    private SetMapper setMapper;
 
     public ChatController(ChatClient.Builder chatClientBuilder) {
         this.dashScopeChatClient = chatClientBuilder

@@ -35,9 +35,6 @@ const breadcrumbItems = computed(() => {
   } else if (path.includes('/work')) {
     selectedKeys.value = ['to-work']
     return [{ title: '学业与就业' }, { title: 'To 就业' }]
-  } else if (path.includes('/review')) {
-    selectedKeys.value = ['daily-review']
-    return [{ title: '每日复盘' }]
   } else if (path.includes('/settings')) {
     selectedKeys.value = ['user-settings']
     return [{ title: '用户与设置' }]
@@ -63,9 +60,6 @@ const onMenuClick = (info: MenuClickInfo) => {
       break
     case 'to-work':
       router.push('/app/work')
-      break
-    case 'daily-review':
-      router.push('/app/review')
       break
     case 'user-settings':
       router.push('/app/settings')
@@ -119,13 +113,6 @@ const onMenuClick = (info: MenuClickInfo) => {
             To 就业
           </a-menu-item>
         </a-sub-menu>
-
-        <a-menu-item key="daily-review">
-          <template #icon>
-            <CalendarOutlined />
-          </template>
-          每日复盘
-        </a-menu-item>
 
         
 

@@ -5,7 +5,6 @@ const AppLayout = () => import('../views/AppLayout.vue')
 const ChatView = () => import('../views/ChatView.vue')
 const FocusView = () => import('../views/FocusView.vue')
 const UserSettingsView = () => import('../views/UserSettingsView.vue')
-const ReviewKnowledgeView = () => import('../views/ReviewKnowledgeView.vue')
 const StudyView = () => import('../views/StudyView.vue')
 const WorkView = () => import('../views/WorkView.vue')
 
@@ -45,12 +44,6 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: UserSettingsView,
-        }
-        ,
-        {
-          path: 'review',
-          name: 'review',
-          component: ReviewKnowledgeView,
         }
         ,
         {
