@@ -29,6 +29,10 @@
         set last_message = #{lastMessage}, updated_at = now()
         where id = #{id}
     </update>
+
+    <delete id="deleteById">
+        delete from t_conversation where id = #{id}
+    </delete>
 </mapper>
 
 

@@ -97,6 +97,27 @@ const createConversationOnServer = async (): Promise<number> => {
   return resp.data?.data ?? resp.data
 }
 
+// 删除会话
+const deleteConversation = async (id: number) => {
+  try {
+    await axios.delete(`http://localhost:8080/conversation/${id}`)
+    // 从本地状态中移除
+    conversations.value = conversations.value.filter(c => c.id !== id)
+    delete convIdToMessages.value[id]
+    // 如果删除的是当前会话，切换到第一个会话或创建新会话
+    if (currentConversation.value === id) {
+      if (conversations.value.length > 0) {
+        await selectConversation(conversations.value[0].id)
+      } else {
+        currentConversation.value = null
+        messages.value = []
+      }
+    }
+  } catch (e) {
+    console.warn('删除会话失败', e)
+  }
+}
+
 // 确保存在后端会话并返回其ID；若当前为本地临时ID（时间戳），则替换为服务端ID
 const ensureConversationOnServer = async (): Promise<number> => {
   const isTempId = (id: number | null) => {
