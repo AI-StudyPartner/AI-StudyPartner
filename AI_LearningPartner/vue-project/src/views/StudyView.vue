@@ -85,9 +85,41 @@ const upcomingExams = ref([
   { id: 2, name: '软考中级', date: '2025-11-20', daysLeft: 64 },
 ])
 
+// 从后端获取考试列表
+const fetchExams = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/exam/list')
+    if (response.data.code === 1) {
+      // 根据后端返回的数据格式进行处理
+      upcomingExams.value = response.data.data.map((exam: any) => {
+        const examDate = new Date(exam.examDate)
+        const today = new Date()
+        const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        return {
+          id: exam.examId,
+          name: exam.examName,
+          date: exam.examDate,
+          daysLeft: daysLeft
+        }
+      })
+    }
+  } catch (error) {
+    console.error('获取考试列表失败:', error)
+  }
+}
+
 // 删除考试
-const deleteExam = (examId: number) => {
-  upcomingExams.value = upcomingExams.value.filter(exam => exam.id !== examId)
+const deleteExam = async (examId: number) => {
+  try {
+    const response = await axios.delete(`http://localhost:8080/exam/delete/${examId}`)
+    if (response.data.code === 1) {
+      upcomingExams.value = upcomingExams.value.filter(exam => exam.id !== examId)
+    } else {
+      console.error('删除考试失败:', response.data.msg)
+    }
+  } catch (error) {
+    console.error('删除考试失败:', error)
+  }
 }
 
 // 添加自定义考试
@@ -97,21 +129,37 @@ const newExam = ref({
   date: ''
 })
 
-const addExam = () => {
+const addExam = async () => {
   if (newExam.value.name && newExam.value.date) {
-    const examDate = new Date(newExam.value.date)
-    const today = new Date()
-    const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    
-    upcomingExams.value.push({
-      id: Date.now(),
-      name: newExam.value.name,
-      date: newExam.value.date,
-      daysLeft: daysLeft
-    })
-    
-    newExam.value = { name: '', date: '' }
-    showAddExamModal.value = false
+    try {
+      const examData = {
+        examName: newExam.value.name,
+        examDate: newExam.value.date,
+        reminder: true
+      }
+
+      const response = await axios.post('http://localhost:8080/exam/add', examData)
+      if (response.data.code === 1) {
+        const examDate = new Date(newExam.value.date)
+        const today = new Date()
+        const daysLeft = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+        // 添加到列表中
+        upcomingExams.value.push({
+          id: Date.now(), // 实际项目中应该使用后端返回的ID
+          name: newExam.value.name,
+          date: newExam.value.date,
+          daysLeft: daysLeft
+        })
+
+        newExam.value = { name: '', date: '' }
+        showAddExamModal.value = false
+      } else {
+        console.error('添加考试失败:', response.data.msg)
+      }
+    } catch (error) {
+      console.error('添加考试失败:', error)
+    }
   }
 }
 
