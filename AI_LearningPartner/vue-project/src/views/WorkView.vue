@@ -6,12 +6,8 @@ const resumeFiles = ref<any[]>([])
 const beforeUpload = (file: File) => { resumeFiles.value = [file]; return false }
 
 // 理想岗位（直接就业）
-const idealPosition = ref<string>('前端工程师')
+const idealPosition = ref<string>('')
 
-const jobVideos = ref([
-  { title: '校招简历速通指南', url: 'https://www.bilibili.com', cover: 'https://via.placeholder.com/160x90' },
-  { title: '技术面试高频题', url: 'https://www.bilibili.com', cover: 'https://via.placeholder.com/160x90' },
-])
 </script>
 
 <template>
@@ -26,7 +22,7 @@ const jobVideos = ref([
       <div class="left">
         <div class="card">
           <h2 class="section-title">理想岗位</h2>
-          <a-input v-model:value="idealPosition" placeholder="例如：前端工程师 / 算法工程师" />
+          <a-input v-model:value="idealPosition" placeholder="例如：后端工程师等" />
           <p class="hint">填写你想从事的岗位名称，后续内容将围绕该方向展示。</p>
         </div>
 
@@ -43,24 +39,12 @@ const jobVideos = ref([
       <!-- 右列：简历上传 + 视频推荐 -->
       <div class="right">
         <div class="card">
-          <h2 class="section-title">简历上传（保留春秋招准备）</h2>
+          <h2 class="section-title">简历上传</h2>
           <a-upload :before-upload="beforeUpload" :file-list="resumeFiles as any">
             <a-button type="primary">选择简历文件</a-button>
           </a-upload>
-          <p class="hint">前端原型，仅展示所选文件，不会上传。</p>
         </div>
 
-        <div class="card">
-          <h2 class="section-title">求职建议与视频（Mock）</h2>
-          <div class="video-grid">
-            <a-card v-for="v in jobVideos" :key="v.title" hoverable class="video-card">
-              <img :src="v.cover" class="cover" alt="cover" />
-              <div class="v-title">
-                <a :href="v.url" target="_blank">{{ v.title }}</a>
-              </div>
-            </a-card>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -78,10 +62,6 @@ const jobVideos = ref([
 .hint { color: #6b7280; margin-top: 8px; }
 .bullets { margin: 0; padding-left: 18px; }
 .bullets li { margin-bottom: 6px; }
-.video-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.video-card { padding: 0; }
-.cover { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; }
-.v-title { margin-top: 8px; }
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 </style>
 
