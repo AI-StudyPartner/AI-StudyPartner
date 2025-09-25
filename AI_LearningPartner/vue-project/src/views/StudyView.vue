@@ -1,10 +1,70 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import axios from 'axios'
 
 const scheduleFiles = ref<any[]>([])
 const beforeUpload = (file: File) => {
   scheduleFiles.value = [file]
   return false
+}
+
+// 计算文件MD5（浏览器端）。这里用 SubtleCrypto 的 SHA-256 代替 MD5，若后端要求严格MD5，可改为spark-md5库。
+async function hashFileSha256Base16(file: File): Promise<string> {
+  const buf = await file.arrayBuffer()
+  const digest = await crypto.subtle.digest('SHA-256', buf)
+  const bytes = Array.from(new Uint8Array(digest))
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const uploading = ref(false)
+const uploadHint = ref('')
+
+const requestLeaseAndUpload = async () => {
+  if (!scheduleFiles.value.length) return
+  const file = scheduleFiles.value[0] as File
+  uploading.value = true
+  uploadHint.value = '准备上传...'
+  try {
+    // 直接走后端直传，避免前端跨域与签名头不一致
+    const form = new FormData()
+    form.append('file', file)
+    uploadHint.value = '上传中...'
+    const resp = await fetch('http://localhost:8080/aliyunbailian/application/file/direct-upload', {
+      method: 'POST',
+      body: form
+    })
+    if (!resp.ok) throw new Error(`上传失败 HTTP ${resp.status}`)
+    uploadHint.value = '上传成功'
+  } catch (e: any) {
+    console.error(e)
+    uploadHint.value = `上传失败：${e?.message || e}`
+  } finally {
+    uploading.value = false
+  }
+}
+
+const uploadAndIndex = async () => {
+  if (!scheduleFiles.value.length) return
+  const file = scheduleFiles.value[0] as File
+  uploading.value = true
+  uploadHint.value = '上传并入库中...'
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    const resp = await fetch('http://localhost:8080/aliyunbailian/application/file/direct-upload-and-index', {
+      method: 'POST',
+      body: form
+    })
+    if (!resp.ok) throw new Error(`入库请求失败 HTTP ${resp.status}`)
+    const data = await resp.json()
+    const payload = (data?.data ?? data)
+    uploadHint.value = `入库任务已提交，jobId=${payload?.jobId || 'unknown'}`
+  } catch (e: any) {
+    console.error(e)
+    uploadHint.value = `入库失败：${e?.message || e}`
+  } finally {
+    uploading.value = false
+  }
 }
 
 // Mock 数据 - 当前课程列表
@@ -86,7 +146,7 @@ const aiSuggestions = ref([
     title: '时间管理建议',
     content: '根据你的学习习惯，建议将难度较大的课程安排在上午学习。',
     icon: '⏰'
-  }
+  },
 ])
 
 // 已学课程（仅展示课程名称，Mock）
@@ -152,10 +212,14 @@ const importCoursesBefore = (file: File) => {
       <div class="left">
         <div class="card">
           <h2 class="section-title">上传课表/考试安排</h2>
-          <a-upload :before-upload="beforeUpload" :file-list="scheduleFiles as any">
+          <a-upload :before-upload="beforeUpload" :file-list="scheduleFiles as any" :show-upload-list="true">
             <a-button type="primary">选择文件</a-button>
           </a-upload>
-          <p class="hint">前端原型，仅展示所选文件，不会上传。</p>
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+            <a-button type="primary" :loading="uploading" @click="requestLeaseAndUpload">仅上传到临时存储</a-button>
+            <a-button type="primary" ghost :loading="uploading" @click="uploadAndIndex">上传并入库到知识库</a-button>
+          </div>
+          <p class="hint">{{ uploadHint }}</p>
         </div>
 
         <div class="card">
