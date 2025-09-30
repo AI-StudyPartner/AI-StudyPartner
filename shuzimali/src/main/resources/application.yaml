@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/shuzimali
     username: root
-    password: 123456
+    password: 123
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-handlers-package: cn.edu.zjweu.cs.shuzimali.typehandler
