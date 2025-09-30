@@ -71,6 +71,14 @@ const uploadAndIndex = async () => {
 
 const upcomingExams = ref()
 
+// AI建议数据
+const aiSuggestions = ref([
+  '建议重点准备前端技术栈：React、Vue3、TypeScript、Webpack等。同时准备算法题和系统设计，建议每天刷2-3道LeetCode题目。',
+  '作为软件工程专业，建议重点复习数据结构、计算机网络、操作系统。可以结合Vue项目经验来理解前端框架原理。',
+  '建议完善Vue项目作品集，可以尝试使用Vue3 + TypeScript重构现有项目，展示对新技术的学习能力。',
+  '建议学习Node.js后端技术，了解全栈开发。同时学习Git版本控制和团队协作工具，这些在面试中很重要。'
+])
+
 // 从后端获取考试列表
 const fetchExams = async () => {
   try {
@@ -190,11 +198,6 @@ onMounted(() => {
           <p class="hint">{{ uploadHint }}</p>
         </div>
 
-
-
-
-
-
         <div class="card">
           <div class="row-header">
             <h2 class="section-title">近期重要考试</h2>
@@ -215,6 +218,25 @@ onMounted(() => {
               </a-list-item>
             </template>
           </a-list>
+        </div>
+      </div>
+
+      <!-- 右列：AI建议 -->
+      <div class="right">
+        <div class="card ai-suggestions-card">
+          <h2 class="section-title">AI学习建议</h2>
+          <p class="ai-subtitle">基于你的专业背景和目标的个性化建议</p>
+          <div class="suggestions-list">
+            <ol class="suggestions-ol">
+              <li 
+                v-for="(suggestion, index) in aiSuggestions" 
+                :key="index" 
+                class="suggestion-item"
+              >
+                {{ suggestion }}
+              </li>
+            </ol>
+          </div>
         </div>
       </div>
     </div>
@@ -389,49 +411,28 @@ onMounted(() => {
   border: 1px solid #bae6fd;
 }
 
+.ai-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: -8px 0 16px 0;
+  font-style: italic;
+}
+
 .suggestions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  margin-top: 8px;
+}
+
+.suggestions-ol {
+  margin: 0;
+  padding-left: 20px;
 }
 
 .suggestion-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
-  border: 1px solid #e0f2fe;
-  transition: all 0.2s ease;
-}
-
-.suggestion-item:hover {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.suggestion-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.suggestion-content {
-  flex: 1;
-}
-
-.suggestion-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #0369a1;
-  margin-bottom: 4px;
-}
-
-.suggestion-text {
-  font-size: 13px;
   color: #475569;
-  line-height: 1.4;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  padding: 8px 0;
 }
 
 @media (max-width: 900px) {

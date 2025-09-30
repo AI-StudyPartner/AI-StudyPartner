@@ -83,6 +83,14 @@ const jobVideos = ref([
   { title: '校招简历速通指南', url: 'https://www.bilibili.com', cover: 'https://via.placeholder.com/160x90' },
   { title: '技术面试高频题', url: 'https://www.bilibili.com', cover: 'https://via.placeholder.com/160x90' },
 ])
+
+// AI就业建议数据
+const aiJobSuggestions = ref([
+  '即使准备考研，也建议积累一段实习经历。实习经验在秋招中非常重要，可以展示实际工作能力和团队协作能力。',
+  '建议将面试高频八股文与计算机408专业课结合学习，如数据结构、计算机网络、操作系统、数据库等，这样既准备考研又提升面试竞争力。',
+  '重点准备前端技术栈：Vue3、React、TypeScript、Webpack等，同时学习Node.js后端技术，向全栈方向发展，增加就业机会。',
+  '建议每天刷2-3道LeetCode算法题，重点掌握数组、链表、树、图等基础数据结构，以及排序、搜索等经典算法。'
+])
 </script>
 <template>
   <div class="work-container">
@@ -92,7 +100,7 @@ const jobVideos = ref([
     </div>
 
     <div class="grid">
-      <!-- 左列：理想岗位 + 就业准备 -->
+      <!-- 左列：理想岗位 + 就业准备 + 简历上传 -->
       <div class="left">
         <div class="card">
           <h2 class="section-title">理想岗位</h2>
@@ -108,10 +116,7 @@ const jobVideos = ref([
             <li>关注目标公司的招聘日程与投递入口</li>
           </ul>
         </div>
-      </div>
 
-      <!-- 右列：简历上传 + 视频推荐 -->
-      <div class="right">
         <div class="card">
           <h2 class="section-title">简历上传</h2>
           <a-upload :before-upload="beforeUpload" :file-list="resumeFiles as any">
@@ -163,6 +168,25 @@ const jobVideos = ref([
           </div>
         </div>
       </div>
+
+      <!-- 右列：AI就业建议 -->
+      <div class="right">
+        <div class="card ai-suggestions-card">
+          <h2 class="section-title">AI就业建议</h2>
+          <p class="ai-subtitle">基于你的专业背景和就业目标的个性化建议</p>
+          <div class="suggestions-list">
+            <ol class="suggestions-ol">
+              <li 
+                v-for="(suggestion, index) in aiJobSuggestions" 
+                :key="index" 
+                class="suggestion-item"
+              >
+                {{ suggestion }}
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -207,6 +231,36 @@ const jobVideos = ref([
 .resume-actions {
   display: flex;
   gap: 8px;
+}
+
+/* AI建议样式 */
+.ai-suggestions-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+}
+
+.ai-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: -8px 0 16px 0;
+  font-style: italic;
+}
+
+.suggestions-list {
+  margin-top: 8px;
+}
+
+.suggestions-ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.suggestion-item {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  padding: 8px 0;
 }
 
 @media (max-width: 900px) {
