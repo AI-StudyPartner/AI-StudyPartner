@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.zjweu.cs.shuzimali.mapper.FocusMapper">
+    <insert id="insertGoal" parameterType="cn.edu.zjweu.cs.shuzimali.entity.Goal" useGeneratedKeys="true" keyProperty="goalId">
+        insert into t_goal (user_id, goal_type, goal_content, title) values (#{userId},#{goalType},#{goalContent}, #{title})
+    </insert>
+    <select id="selectById" resultType="cn.edu.zjweu.cs.shuzimali.entity.Goal" parameterType="int">
+        select * from t_goal where user_id = #{id}
+    </select>
+    <update id="updateCompleted">
+        update t_goal set completed = #{completed} where goal_id = #{id}
+    </update>
+    <delete id="deleteGoal" parameterType="int">
+        delete from t_goal where goal_id = #{id}
+    </delete>
+</mapper>

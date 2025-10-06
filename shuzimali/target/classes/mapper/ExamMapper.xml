@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.edu.zjweu.cs.shuzimali.mapper.ExamMapper">
+    <resultMap id="ExamResultMap" type="cn.edu.zjweu.cs.shuzimali.entity.Exam">
+        <id property="examId" column="exam_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="examName" column="exam_name"/>
+        <result property="examDate" column="exam_date"/>
+        <result property="reminder" column="reminder"/>
+        <result property="createAt" column="create_at"/>
+    </resultMap>
+
+    <!-- 查询用户的所有考试 -->
+    <select id="selectExamsByUserId" resultMap="ExamResultMap" parameterType="int">
+        SELECT exam_id, user_id, exam_name, exam_date, reminder, create_at
+        FROM t_exam
+        WHERE user_id = #{userId}
+        ORDER BY exam_date ASC
+    </select>
+
+    <!-- 添加考试 -->
+    <insert id="insertExam" parameterType="cn.edu.zjweu.cs.shuzimali.entity.Exam" useGeneratedKeys="true" keyProperty="examId">
+        INSERT INTO t_exam (user_id, exam_name, exam_date, reminder)
+        VALUES (#{userId}, #{examName}, #{examDate}, #{reminder})
+    </insert>
+
+    <!-- 删除考试 -->
+    <delete id="deleteExamById">
+        DELETE FROM t_exam
+        WHERE exam_id = #{examId} AND user_id = #{userId}
+    </delete>
+
+    <!-- 更新考试 -->
+    <update id="updateExam" parameterType="cn.edu.zjweu.cs.shuzimali.entity.Exam">
+        UPDATE t_exam
+        SET exam_name = #{examName},
+            exam_date = #{examDate},
+            reminder = #{reminder}
+        WHERE exam_id = #{examId} AND user_id = #{userId}
+    </update>
+
+    <!-- 根据ID查询考试 -->
+    <select id="selectExamById" resultMap="ExamResultMap">
+        SELECT exam_id, user_id, exam_name, exam_date, reminder, create_at
+        FROM t_exam
+        WHERE exam_id = #{examId} AND user_id = #{userId}
+    </select>
+</mapper>

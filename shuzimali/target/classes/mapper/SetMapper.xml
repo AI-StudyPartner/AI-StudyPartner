@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper PUBLIC
+        "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.edu.zjweu.cs.shuzimali.mapper.SetMapper">
+    
+    <!-- 定义结果映射，为weekly_available_days字段指定类型转换器 -->
+    <resultMap id="SetResultMap" type="cn.edu.zjweu.cs.shuzimali.entity.Set">
+        <id property="setting_id" column="setting_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="personalProfile" column="personal_profile"/>
+        <result property="preferredStudyTime" column="preferred_study_time"/>
+        <result property="dailyFocusMinute" column="daily_focus_minute"/>
+        <result property="weeklyAvailableDays" column="weekly_available_days" 
+                typeHandler="cn.edu.zjweu.cs.shuzimali.typehandler.WeeklyAvailableDaysTypeHandler"/>
+        <result property="tone" column="tone"/>
+        <result property="responseLength" column="response_length"/>
+        <result property="allowEmojis" column="allow_emojis"/>
+        <result property="showCitations" column="show_citations"/>
+    </resultMap>
+    
+    <select id="selectSet" resultMap="SetResultMap" parameterType="int">
+        select setting_id, user_id, personal_profile, preferred_study_time, daily_focus_minute, 
+               weekly_available_days, tone, response_length, allow_emojis, show_citations
+        from t_setting
+        where user_id = #{userId}
+    </select>
+    <insert id="save" parameterType="cn.edu.zjweu.cs.shuzimali.entity.Set">
+        insert into t_setting (user_id,personal_profile, preferred_study_time, daily_focus_minute, weekly_available_days, tone, response_length, allow_emojis, show_citations)
+        values (#{userId},#{personalProfile}, #{preferredStudyTime}, #{dailyFocusMinute}, 
+                #{weeklyAvailableDays,typeHandler=cn.edu.zjweu.cs.shuzimali.typehandler.WeeklyAvailableDaysTypeHandler}, 
+                #{tone}, #{responseLength}, #{allowEmojis}, #{showCitations})
+    </insert>
+    <update id="update">
+        update t_setting
+        set personal_profile = #{userSet.personalProfile}, preferred_study_time = #{userSet.preferredStudyTime}, daily_focus_minute = #{userSet.dailyFocusMinute},
+            weekly_available_days = #{userSet.weeklyAvailableDays,typeHandler=cn.edu.zjweu.cs.shuzimali.typehandler.WeeklyAvailableDaysTypeHandler},
+            tone = #{userSet.tone}, response_length = #{userSet.responseLength}, allow_emojis = #{userSet.allowEmojis}, show_citations = #{userSet.showCitations}
+            where user_id = #{userId}
+    </update>
+</mapper>
